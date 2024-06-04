@@ -22,7 +22,7 @@ module {
   public class Digest(algo_ : Algorithm) {
     let state = StaticSha512.Digest(algo_);
 
-    public func algo() : Algorithm = algo_;
+    public func algo() : Algorithm = StaticSha512.algo(state);
 
     public func reset() = StaticSha512.reset(state);
 

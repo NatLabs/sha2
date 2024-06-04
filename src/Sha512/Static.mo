@@ -150,21 +150,21 @@ module {
 
   let rot = Nat64.bitrotRight;
 
-  public type StaticSha512 = {
-    algo : Algorithm;
-    msg : [var Nat64];
-    digest : [var Nat8];
-    var word : Nat64;
+  public type StaticSha512 = (
+    algo : Algorithm,
+    msg : [var Nat64],
+    digest : [var Nat8],
 
-    var i_msg : Nat8;
-    var i_byte : Nat8;
-    var i_block : Nat64;
+    word : [var Nat64],
+    i_msg : [var Nat8],
+    i_byte : [var Nat8],
+    i_block : [var Nat64],
 
-    iv: Nat;
+    iv: Nat,
 
     // state variables
-    s : [var Nat64];
-  };
+    s : [var Nat64],
+  );
 
   public func Digest(algo: Algorithm) : StaticSha512 {
     let (sum_bytes, iv) = switch (algo) {
@@ -174,69 +174,69 @@ module {
       case (#sha512) { (64, 3) };
     };
 
-    let state : StaticSha512 = {
-      algo;
-      msg = Array.init<Nat64>(80, 0);
-      digest = Array.init<Nat8>(sum_bytes, 0);
-      var word = 0;
-      
-      var i_msg = 0;
-      var i_byte = 8;
-      var i_block = 0;
+    let state : StaticSha512 = (
+      algo,
+      Array.init<Nat64>(80, 0),
+      Array.init<Nat8>(sum_bytes, 0),
 
-      iv;
+      [var 0],
+      [var 0],
+      [var 8],
+      [var 0],
 
-      s = Array.init<Nat64>(8, 0);
-    };
+      iv,
+
+      Array.init<Nat64>(8, 0),
+    );
 
     state;
   };
 
   public func algo(state: StaticSha512): Algorithm {
-    return state.algo;
+    return state.0;
   };
 
   public func reset(state: StaticSha512) {
-    state.i_msg := 0;
-    state.i_byte := 8;
-    state.i_block := 0;
+    state.4[0] := 0;
+    state.5[0] := 8;
+    state.6[0] := 0;
 
-    state.s[0] := ivs[state.iv][0];
-    state.s[1] := ivs[state.iv][1];
-    state.s[2] := ivs[state.iv][2];
-    state.s[3] := ivs[state.iv][3];
-    state.s[4] := ivs[state.iv][4];
-    state.s[5] := ivs[state.iv][5];
-    state.s[6] := ivs[state.iv][6];
-    state.s[7] := ivs[state.iv][7];
+    state.8[0] := ivs[state.7][0];
+    state.8[1] := ivs[state.7][1];
+    state.8[2] := ivs[state.7][2];
+    state.8[3] := ivs[state.7][3];
+    state.8[4] := ivs[state.7][4];
+    state.8[5] := ivs[state.7][5];
+    state.8[6] := ivs[state.7][6];
+    state.8[7] := ivs[state.7][7];
 
   };
 
   public func writeByte(state: StaticSha512, val: Nat8) {
-    state.word := (state.word << 8) ^ Prim.nat32ToNat64(Prim.nat16ToNat32(Prim.nat8ToNat16(val)));
-    state.i_byte -%= 1;
-    if (state.i_byte == 0) {
-      state.msg[Nat8.toNat(state.i_msg)] := state.word;
-      state.word := 0;
-      state.i_byte := 8;
-      state.i_msg +%= 1;
-      if (state.i_msg == 16) {
+    state.3[0] := (state.3[0] << 8) ^ Prim.nat32ToNat64(Prim.nat16ToNat32(Prim.nat8ToNat16(val)));
+    state.5[0] -%= 1;
+    if (state.5[0] == 0) {
+      state.1[Nat8.toNat(state.4[0])] := state.3[0];
+      state.3[0] := 0;
+      state.5[0] := 8;
+      state.4[0] +%= 1;
+      if (state.4[0] == 16) {
         process_block(state);
-        state.i_msg := 0;
-        state.i_block +%= 1;
+        state.4[0] := 0;
+        state.6[0] +%= 1;
       };
     };
   };
 
   // We must be at a word boundary, i.e. i_byte must be equal to 8
   public func writeWord(state: StaticSha512, val: Nat64) {
-    assert (state.i_byte == 8);
-    state.msg[Nat8.toNat(state.i_msg)] := val;
-    state.i_msg +%= 1;
-    if (state.i_msg == 16) {
+    assert (state.5[0] == 8);
+    state.1[Nat8.toNat(state.4[0])] := val;
+    state.4[0] +%= 1;
+    if (state.4[0] == 16) {
       process_block(state);
-      state.i_msg := 0;
-      state.i_block +%= 1;
+      state.4[0] := 0;
+      state.6[0] +%= 1;
     };
   };
 
@@ -249,22 +249,22 @@ module {
     //   let s1 = rot(v1, 17) ^ rot(v1, 19) ^ (v1 >> 10);
     //   msg[m] := msg[i] +% s0 +% msg[k] +% s1;
     // };
-    let w00 = state.msg[0];
-    let w01 = state.msg[1];
-    let w02 = state.msg[2];
-    let w03 = state.msg[3];
-    let w04 = state.msg[4];
-    let w05 = state.msg[5];
-    let w06 = state.msg[6];
-    let w07 = state.msg[7];
-    let w08 = state.msg[8];
-    let w09 = state.msg[9];
-    let w10 = state.msg[10];
-    let w11 = state.msg[11];
-    let w12 = state.msg[12];
-    let w13 = state.msg[13];
-    let w14 = state.msg[14];
-    let w15 = state.msg[15];
+    let w00 = state.1[0];
+    let w01 = state.1[1];
+    let w02 = state.1[2];
+    let w03 = state.1[3];
+    let w04 = state.1[4];
+    let w05 = state.1[5];
+    let w06 = state.1[6];
+    let w07 = state.1[7];
+    let w08 = state.1[8];
+    let w09 = state.1[9];
+    let w10 = state.1[10];
+    let w11 = state.1[11];
+    let w12 = state.1[12];
+    let w13 = state.1[13];
+    let w14 = state.1[14];
+    let w15 = state.1[15];
     let w16 = w00 +% rot(w01, 01) ^ rot(w01, 08) ^ (w01 >> 07) +% w09 +% rot(w14, 19) ^ rot(w14, 61) ^ (w14 >> 06);
     let w17 = w01 +% rot(w02, 01) ^ rot(w02, 08) ^ (w02 >> 07) +% w10 +% rot(w15, 19) ^ rot(w15, 61) ^ (w15 >> 06);
     let w18 = w02 +% rot(w03, 01) ^ rot(w03, 08) ^ (w03 >> 07) +% w11 +% rot(w16, 19) ^ rot(w16, 61) ^ (w16 >> 06);
@@ -331,14 +331,14 @@ module {
     let w79 = w63 +% rot(w64, 01) ^ rot(w64, 08) ^ (w64 >> 07) +% w72 +% rot(w77, 19) ^ rot(w77, 61) ^ (w77 >> 06);
     
     // compress
-    var a = state.s[0];
-    var b = state.s[1];
-    var c = state.s[2];
-    var d = state.s[3];
-    var e = state.s[4];
-    var f = state.s[5];
-    var g = state.s[6];
-    var h = state.s[7];
+    var a = state.8[0];
+    var b = state.8[1];
+    var c = state.8[2];
+    var d = state.8[3];
+    var e = state.8[4];
+    var f = state.8[5];
+    var g = state.8[6];
+    var h = state.8[7];
 
     // Below is an inlined and unrolled version of this code:
     // for (i in compression_rounds.keys()) {
@@ -440,14 +440,14 @@ module {
       t := h +% K79 +% w79 +% (e & f) ^ (^ e & g) +% rot(e, 14) ^ rot(e, 18) ^ rot(e, 41); h := g; g := f; f := e; e := d +% t; d := c; c := b; b := a; a := t +% (b & c) ^ (b & d) ^ (c & d) +% rot(a, 28) ^ rot(a, 34) ^ rot(a, 39);
 
       //final addition
-      state.s[0] +%= a;
-      state.s[1] +%= b;
-      state.s[2] +%= c;
-      state.s[3] +%= d;
-      state.s[4] +%= e;
-      state.s[5] +%= f;
-      state.s[6] +%= g;
-      state.s[7] +%= h;
+      state.8[0] +%= a;
+      state.8[1] +%= b;
+      state.8[2] +%= c;
+      state.8[3] +%= d;
+      state.8[4] +%= e;
+      state.8[5] +%= f;
+      state.8[6] +%= g;
+      state.8[7] +%= h;
 
   };
 
@@ -470,12 +470,12 @@ module {
   public func sum(state: StaticSha512): Blob {
     // calculate padding
     // t = bytes in the last incomplete block (0-127)
-    let t : Nat8 = (state.i_msg << 3) +% 8 -% state.i_byte;
+    let t : Nat8 = (state.4[0] << 3) +% 8 -% state.5[0];
     // p = length of padding (1 - 128)
     var p : Nat8 = if (t < 112) (112 -% t) else (240 -% t);
     // n_bits = total number of bits in the message
     // Note: This implementation only handles messages < 2^64 bits
-    let n_bits : Nat64 = ((state.i_block << 7) +% Nat64.fromIntWrap(Nat8.toNat(t))) << 3;
+    let n_bits : Nat64 = ((state.6[0] << 7) +% Nat64.fromIntWrap(Nat8.toNat(t))) << 3;
 
     // write 1-7 padding bytes
     writeByte(state, 0x80);
@@ -500,98 +500,98 @@ module {
      writeWord(state, n_bits);
 
      // retrieve sum
-      state.digest[0] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 56) & 0xff));
-      state.digest[1] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 48) & 0xff));
-      state.digest[2] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 40) & 0xff));
-      state.digest[3] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 32) & 0xff));
-      state.digest[4] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 24) & 0xff));
-      state.digest[5] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 16) & 0xff));
-      state.digest[6] := Nat8.fromIntWrap(Nat64.toNat((state.s[0] >> 8) & 0xff));
-      state.digest[7] := Nat8.fromIntWrap(Nat64.toNat(state.s[0] & 0xff));
+      state.2[0] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 56) & 0xff));
+      state.2[1] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 48) & 0xff));
+      state.2[2] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 40) & 0xff));
+      state.2[3] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 32) & 0xff));
+      state.2[4] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 24) & 0xff));
+      state.2[5] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 16) & 0xff));
+      state.2[6] := Nat8.fromIntWrap(Nat64.toNat((state.8[0] >> 8) & 0xff));
+      state.2[7] := Nat8.fromIntWrap(Nat64.toNat(state.8[0] & 0xff));
 
-      state.digest[8] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 56) & 0xff));
-      state.digest[9] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 48) & 0xff));
-      state.digest[10] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 40) & 0xff));
-      state.digest[11] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 32) & 0xff));
-      state.digest[12] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 24) & 0xff));
-      state.digest[13] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 16) & 0xff));
-      state.digest[14] := Nat8.fromIntWrap(Nat64.toNat((state.s[1] >> 8) & 0xff));
-      state.digest[15] := Nat8.fromIntWrap(Nat64.toNat(state.s[1] & 0xff));
+      state.2[8] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 56) & 0xff));
+      state.2[9] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 48) & 0xff));
+      state.2[10] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 40) & 0xff));
+      state.2[11] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 32) & 0xff));
+      state.2[12] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 24) & 0xff));
+      state.2[13] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 16) & 0xff));
+      state.2[14] := Nat8.fromIntWrap(Nat64.toNat((state.8[1] >> 8) & 0xff));
+      state.2[15] := Nat8.fromIntWrap(Nat64.toNat(state.8[1] & 0xff));
 
-      state.digest[16] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 56) & 0xff));
-      state.digest[17] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 48) & 0xff));
-      state.digest[18] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 40) & 0xff));
-      state.digest[19] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 32) & 0xff));
-      state.digest[20] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 24) & 0xff));
-      state.digest[21] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 16) & 0xff));
-      state.digest[22] := Nat8.fromIntWrap(Nat64.toNat((state.s[2] >> 8) & 0xff));
-      state.digest[23] := Nat8.fromIntWrap(Nat64.toNat(state.s[2] & 0xff));
+      state.2[16] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 56) & 0xff));
+      state.2[17] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 48) & 0xff));
+      state.2[18] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 40) & 0xff));
+      state.2[19] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 32) & 0xff));
+      state.2[20] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 24) & 0xff));
+      state.2[21] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 16) & 0xff));
+      state.2[22] := Nat8.fromIntWrap(Nat64.toNat((state.8[2] >> 8) & 0xff));
+      state.2[23] := Nat8.fromIntWrap(Nat64.toNat(state.8[2] & 0xff));
 
-      state.digest[24] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 56) & 0xff));
-      state.digest[25] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 48) & 0xff));
-      state.digest[26] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 40) & 0xff));
-      state.digest[27] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 32) & 0xff));
+      state.2[24] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 56) & 0xff));
+      state.2[25] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 48) & 0xff));
+      state.2[26] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 40) & 0xff));
+      state.2[27] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 32) & 0xff));
 
-      if (state.algo == #sha512_224) {
-        let blob = Blob.fromArrayMut(state.digest);
+      if (state.0 == #sha512_224) {
+        let blob = Blob.fromArrayMut(state.2);
         reset(state);
         return blob;
       };
 
-      state.digest[28] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 24) & 0xff));
-      state.digest[29] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 16) & 0xff));
-      state.digest[30] := Nat8.fromIntWrap(Nat64.toNat((state.s[3] >> 8) & 0xff));
-      state.digest[31] := Nat8.fromIntWrap(Nat64.toNat(state.s[3] & 0xff));
+      state.2[28] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 24) & 0xff));
+      state.2[29] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 16) & 0xff));
+      state.2[30] := Nat8.fromIntWrap(Nat64.toNat((state.8[3] >> 8) & 0xff));
+      state.2[31] := Nat8.fromIntWrap(Nat64.toNat(state.8[3] & 0xff));
 
-      if (state.algo == #sha512_256) {
-        let blob = Blob.fromArrayMut(state.digest);
+      if (state.0 == #sha512_256) {
+        let blob = Blob.fromArrayMut(state.2);
         reset(state);
         return blob;
       };
 
-      state.digest[32] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 56) & 0xff));
-      state.digest[33] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 48) & 0xff));
-      state.digest[34] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 40) & 0xff));
-      state.digest[35] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 32) & 0xff));
-      state.digest[36] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 24) & 0xff));
-      state.digest[37] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 16) & 0xff));
-      state.digest[38] := Nat8.fromIntWrap(Nat64.toNat((state.s[4] >> 8) & 0xff));
-      state.digest[39] := Nat8.fromIntWrap(Nat64.toNat(state.s[4] & 0xff));
+      state.2[32] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 56) & 0xff));
+      state.2[33] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 48) & 0xff));
+      state.2[34] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 40) & 0xff));
+      state.2[35] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 32) & 0xff));
+      state.2[36] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 24) & 0xff));
+      state.2[37] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 16) & 0xff));
+      state.2[38] := Nat8.fromIntWrap(Nat64.toNat((state.8[4] >> 8) & 0xff));
+      state.2[39] := Nat8.fromIntWrap(Nat64.toNat(state.8[4] & 0xff));
 
-      state.digest[40] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 56) & 0xff));
-      state.digest[41] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 48) & 0xff));
-      state.digest[42] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 40) & 0xff));
-      state.digest[43] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 32) & 0xff));
-      state.digest[44] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 24) & 0xff));
-      state.digest[45] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 16) & 0xff));
-      state.digest[46] := Nat8.fromIntWrap(Nat64.toNat((state.s[5] >> 8) & 0xff));
-      state.digest[47] := Nat8.fromIntWrap(Nat64.toNat(state.s[5] & 0xff));
+      state.2[40] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 56) & 0xff));
+      state.2[41] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 48) & 0xff));
+      state.2[42] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 40) & 0xff));
+      state.2[43] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 32) & 0xff));
+      state.2[44] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 24) & 0xff));
+      state.2[45] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 16) & 0xff));
+      state.2[46] := Nat8.fromIntWrap(Nat64.toNat((state.8[5] >> 8) & 0xff));
+      state.2[47] := Nat8.fromIntWrap(Nat64.toNat(state.8[5] & 0xff));
 
-      if (state.algo == #sha384) {
-        let blob = Blob.fromArrayMut(state.digest);
+      if (state.0 == #sha384) {
+        let blob = Blob.fromArrayMut(state.2);
         reset(state);
         return blob;
       };
 
-      state.digest[48] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 56) & 0xff));
-      state.digest[49] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 48) & 0xff));
-      state.digest[50] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 40) & 0xff));
-      state.digest[51] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 32) & 0xff));
-      state.digest[52] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 24) & 0xff));
-      state.digest[53] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 16) & 0xff));
-      state.digest[54] := Nat8.fromIntWrap(Nat64.toNat((state.s[6] >> 8) & 0xff));
-      state.digest[55] := Nat8.fromIntWrap(Nat64.toNat(state.s[6] & 0xff));
+      state.2[48] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 56) & 0xff));
+      state.2[49] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 48) & 0xff));
+      state.2[50] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 40) & 0xff));
+      state.2[51] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 32) & 0xff));
+      state.2[52] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 24) & 0xff));
+      state.2[53] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 16) & 0xff));
+      state.2[54] := Nat8.fromIntWrap(Nat64.toNat((state.8[6] >> 8) & 0xff));
+      state.2[55] := Nat8.fromIntWrap(Nat64.toNat(state.8[6] & 0xff));
 
-      state.digest[56] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 56) & 0xff));
-      state.digest[57] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 48) & 0xff));
-      state.digest[58] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 40) & 0xff));
-      state.digest[59] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 32) & 0xff));
-      state.digest[60] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 24) & 0xff));
-      state.digest[61] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 16) & 0xff));
-      state.digest[62] := Nat8.fromIntWrap(Nat64.toNat((state.s[7] >> 8) & 0xff));
-      state.digest[63] := Nat8.fromIntWrap(Nat64.toNat(state.s[7] & 0xff));
+      state.2[56] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 56) & 0xff));
+      state.2[57] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 48) & 0xff));
+      state.2[58] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 40) & 0xff));
+      state.2[59] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 32) & 0xff));
+      state.2[60] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 24) & 0xff));
+      state.2[61] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 16) & 0xff));
+      state.2[62] := Nat8.fromIntWrap(Nat64.toNat((state.8[7] >> 8) & 0xff));
+      state.2[63] := Nat8.fromIntWrap(Nat64.toNat(state.8[7] & 0xff));
 
-      let blob = Blob.fromArrayMut(state.digest);
+      let blob = Blob.fromArrayMut(state.2);
       reset(state);
       return blob;
   };

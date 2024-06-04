@@ -22,7 +22,7 @@ module {
   public class Digest(algo_ : Algorithm) {
     let state = StaticSha256.Digest(algo_);
 
-    public func algo() : Algorithm = state.algo;
+    public func algo() : Algorithm = StaticSha256.algo(state);
 
     public func reset() = StaticSha256.reset(state);
 
